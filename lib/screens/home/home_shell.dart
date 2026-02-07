@@ -4,6 +4,7 @@ import 'package:withfam/widgets/rounded_nav_bar.dart';
 
 import '../ads/ads_screen.dart';
 import '../history/history_screen.dart';
+import '../logs/log_screen.dart';
 import '../map/map_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -19,6 +20,7 @@ class _HomeShellState extends State<HomeShell> {
   static const _navItems = [
     NavItem(title: 'Map', icon: Icons.map_rounded, child: MapScreen()),
     NavItem(title: 'History', icon: Icons.history, child: HistoryScreen()),
+    NavItem(title: 'Logs', icon: Icons.list_alt_rounded, child: LogScreen()),
     NavItem(title: 'Ads', icon: Icons.ad_units, child: AdsScreen()),
   ];
 

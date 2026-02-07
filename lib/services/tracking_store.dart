@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/tracking_models.dart';
+import 'log_service.dart';
 
 /// Very simple in-memory store for visits and trips.
 /// Replace with persistent storage (Hive/SQLite) later.
@@ -29,6 +30,7 @@ class TrackingStore {
   Future<void> loadFromDisk() async {
     _visitsBox ??= await Hive.openBox<dynamic>(_visitsBoxName);
     _tripsBox ??= await Hive.openBox<dynamic>(_tripsBoxName);
+    await LogService.instance.load();
 
     final rawVisits = (_visitsBox!.get(_itemsKey) as List?) ?? <dynamic>[];
     final rawTrips = (_tripsBox!.get(_itemsKey) as List?) ?? <dynamic>[];
@@ -42,9 +44,17 @@ class TrackingStore {
     required bool isMoving,
     required DateTime at,
     String? activityType,
+    double? speed,
+    bool? isMovingFlag,
   }) {
     if (isMoving) {
-      _appendToTrip(point, at, activityType: activityType);
+      _appendToTrip(
+        point,
+        at,
+        activityType: activityType,
+        speed: speed,
+        isMovingFlag: isMovingFlag,
+      );
       _closeVisit(at);
     } else {
       _appendToVisit(point, at);
@@ -52,7 +62,13 @@ class TrackingStore {
     }
   }
 
-  void _appendToTrip(LatLng point, DateTime at, {String? activityType}) {
+  void _appendToTrip(
+    LatLng point,
+    DateTime at, {
+    String? activityType,
+    double? speed,
+    bool? isMovingFlag,
+  }) {
     final normalizedActivity = activityType?.toLowerCase();
 
     if (_activeTrip != null &&
@@ -64,27 +80,53 @@ class TrackingStore {
     }
 
     if (_activeTrip == null) {
-      _activeTrip = TripSegment(
-        points: [point],
-        startedAt: at,
-        activityType: normalizedActivity,
-      );
+      _activeTrip = TripSegment(points: [], activityType: normalizedActivity);
       trips.value = [...trips.value, _activeTrip!];
-      debugPrint(
+      LogService.instance.log(
         "Starting new trip ${trips.value.length} at $at with point $point",
+        activity: normalizedActivity,
+        isMoving: true,
+        tripIndex: trips.value.length,
+        at: at,
+        lat: point.latitude,
+        lng: point.longitude,
       );
       unawaited(_persistTrips());
-    } else {
-      _activeTrip!.points.add(point);
-      _activeTrip!.activityType ??= normalizedActivity;
-      debugPrint("Adding to trip ${trips.value.length} point $point at $at");
     }
+
+    _activeTrip!.addPoint(
+      point,
+      at,
+      activityType: normalizedActivity,
+      speed: speed,
+      isMoving: isMovingFlag,
+    );
+    LogService.instance.log(
+      "Adding to trip ${trips.value.length} point $point at $at",
+      activity: normalizedActivity,
+      isMoving: isMovingFlag,
+      tripIndex: trips.value.length,
+      at: at,
+      lat: point.latitude,
+      lng: point.longitude,
+    );
   }
 
   void _closeTrip(DateTime at) {
-    if (_activeTrip != null && _activeTrip!.endedAt == null) {
-      debugPrint("Closing trip ${trips.value.length} at $at");
-      _activeTrip!.endedAt = at;
+    if (_activeTrip != null) {
+      LogService.instance.log(
+        "Closing trip ${trips.value.length} at $at",
+        activity: _activeTrip!.activityType,
+        isMoving: false,
+        tripIndex: trips.value.length,
+        at: at,
+        lat: _activeTrip!.points.isNotEmpty
+            ? _activeTrip!.points.last.point.latitude
+            : null,
+        lng: _activeTrip!.points.isNotEmpty
+            ? _activeTrip!.points.last.point.longitude
+            : null,
+      );
       trips.value = [...trips.value];
       unawaited(_persistTrips());
       _activeTrip = null;
@@ -93,8 +135,12 @@ class TrackingStore {
 
   void _appendToVisit(LatLng point, DateTime at) {
     if (_activeVisit == null) {
-      debugPrint(
+      LogService.instance.log(
         "Starting new visit ${visits.value.length} at $at with point $point",
+        isMoving: false,
+        at: at,
+        lat: point.latitude,
+        lng: point.longitude,
       );
       _activeVisit = Visit(place: point, arrivedAt: at);
       visits.value = [...visits.value, _activeVisit!];
@@ -104,7 +150,13 @@ class TrackingStore {
 
   void _closeVisit(DateTime at) {
     if (_activeVisit != null && _activeVisit!.departedAt == null) {
-      debugPrint("Closing visit ${visits.value.length} at $at");
+      LogService.instance.log(
+        "Closing visit ${visits.value.length} at $at",
+        isMoving: true,
+        at: at,
+        lat: _activeVisit!.place.latitude,
+        lng: _activeVisit!.place.longitude,
+      );
       _activeVisit!.departedAt = at;
       visits.value = [...visits.value];
       unawaited(_persistVisits());

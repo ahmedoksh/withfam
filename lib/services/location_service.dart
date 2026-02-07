@@ -44,6 +44,11 @@ class LocationService {
       ),
     );
 
+    // Seed motion state and fetch an immediate fix so UI has data on launch.
+    _lastIsMoving = state.isMoving ?? false;
+    isMoving.value = state.isMoving ?? false;
+    _fetchInitialLocation();
+
     bg.BackgroundGeolocation.onLocation((bg.Location location) {
       // print the activity, stationary, in vehicle waking or what
       final at = _parseTimestamp(location.timestamp);
@@ -127,6 +132,8 @@ class LocationService {
       isMoving: location.isMoving,
       at: at,
       activityType: activityType,
+      speed: coords.speed,
+      isMovingFlag: location.isMoving,
     );
   }
 
@@ -168,5 +175,22 @@ class LocationService {
     final battery = location.battery;
     batteryLevel.value = battery.level;
     isCharging.value = battery.isCharging;
+  }
+
+  Future<void> _fetchInitialLocation() async {
+    try {
+      final loc = await bg.BackgroundGeolocation.getCurrentPosition(
+        samples: 1,
+        timeout: 20,
+        persist: false,
+      );
+      final at = _parseTimestamp(loc.timestamp);
+      _lastIsMoving = loc.isMoving;
+      isMoving.value = loc.isMoving;
+      _updateBattery(loc);
+      _pushToStore(loc, atOverride: at);
+    } catch (e) {
+      debugPrint('Initial location fetch failed: $e');
+    }
   }
 }

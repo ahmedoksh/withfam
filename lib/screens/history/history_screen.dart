@@ -10,16 +10,18 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = TrackingStore.instance;
 
-    return ValueListenableBuilder(
-      valueListenable: store.visits,
-      builder: (context, visits, _) {
-        return ValueListenableBuilder(
-          valueListenable: store.trips,
-          builder: (context, trips, __) {
-            return HistoryList(visits: visits, trips: trips);
-          },
-        );
-      },
+    return SafeArea(
+      child: ValueListenableBuilder(
+        valueListenable: store.visits,
+        builder: (context, visits, _) {
+          return ValueListenableBuilder(
+            valueListenable: store.trips,
+            builder: (context, trips, __) {
+              return HistoryList(visits: visits, trips: trips);
+            },
+          );
+        },
+      ),
     );
   }
 }

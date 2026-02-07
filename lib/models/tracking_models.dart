@@ -27,37 +27,88 @@ class Visit {
   }
 }
 
-class TripSegment {
-  TripSegment({
-    required this.points,
-    required this.startedAt,
-    this.endedAt,
+class PointInfo {
+  const PointInfo({
+    required this.point,
+    required this.timestamp,
     this.activityType,
+    this.speed,
+    this.isMoving,
   });
 
-  final List<LatLng> points;
-  final DateTime startedAt;
-  DateTime? endedAt;
+  final LatLng point;
+  final DateTime timestamp;
+  final String? activityType;
+  final double? speed;
+  final bool? isMoving;
+
+  Map<String, dynamic> toMap() => {
+    'point': _latLngToMap(point),
+    'timestamp': timestamp.millisecondsSinceEpoch,
+    'activityType': activityType,
+    'speed': speed,
+    'isMoving': isMoving,
+  };
+
+  factory PointInfo.fromMap(Map map) {
+    return PointInfo(
+      point: _latLngFromMap((map['point'] ?? map) as Map),
+      timestamp: _ts(map['timestamp']),
+      activityType: map['activityType'] as String?,
+      speed: (map['speed'] as num?)?.toDouble(),
+      isMoving: map['isMoving'] as bool?,
+    );
+  }
+}
+
+class TripSegment {
+  TripSegment({List<PointInfo>? points, this.activityType})
+    : points = points ?? [];
+
+  final List<PointInfo> points;
   String? activityType;
 
-  Duration get duration =>
-      (endedAt ?? DateTime.now()).difference(startedAt).abs();
+  void addPoint(
+    LatLng point,
+    DateTime at, {
+    String? activityType,
+    double? speed,
+    bool? isMoving,
+  }) {
+    points.add(
+      PointInfo(
+        point: point,
+        timestamp: at,
+        activityType: activityType,
+        speed: speed,
+        isMoving: isMoving,
+      ),
+    );
+    this.activityType ??= activityType;
+  }
+
+  DateTime? get startedAt => points.isEmpty ? null : points.first.timestamp;
+  DateTime? get endedAt => points.isEmpty ? null : points.last.timestamp;
+
+  Duration? get duration {
+    final start = startedAt;
+    final end = endedAt;
+    if (start == null || end == null) return null;
+    return end.difference(start).abs();
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'points': points.map(_latLngToMap).toList(),
-      'startedAt': startedAt.millisecondsSinceEpoch,
-      'endedAt': endedAt?.millisecondsSinceEpoch,
+      'points': points.map((p) => p.toMap()).toList(),
       'activityType': activityType,
     };
   }
 
   static TripSegment fromMap(Map map) {
     final rawPoints = (map['points'] as List?) ?? <dynamic>[];
+    final pts = rawPoints.map((p) => PointInfo.fromMap(p as Map)).toList();
     return TripSegment(
-      points: rawPoints.map((p) => _latLngFromMap(p as Map)).toList(),
-      startedAt: _ts(map['startedAt']),
-      endedAt: map['endedAt'] != null ? _ts(map['endedAt']) : null,
+      points: pts,
       activityType: map['activityType'] as String?,
     );
   }

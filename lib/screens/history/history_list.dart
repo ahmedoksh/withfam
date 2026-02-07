@@ -14,11 +14,11 @@ class HistoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = <Widget>[];
 
-    // Simple interleave: visits first, then trips (can be improved with ordering)
-    for (final visit in visits) {
+    // Show most recent first.
+    for (final visit in visits.reversed) {
       cards.add(_VisitCard(visit: visit));
     }
-    for (final trip in trips) {
+    for (final trip in trips.reversed) {
       cards.add(_TripCard(trip: trip));
     }
 
@@ -67,15 +67,24 @@ class _VisitCard extends StatelessWidget {
   }
 }
 
-class _TripCard extends StatelessWidget {
+class _TripCard extends StatefulWidget {
   const _TripCard({required this.trip});
 
   final TripSegment trip;
 
   @override
+  State<_TripCard> createState() => _TripCardState();
+}
+
+class _TripCardState extends State<_TripCard> {
+  int _refreshNonce = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final start = trip.points.isNotEmpty ? trip.points.first : null;
-    final end = trip.points.length > 1 ? trip.points.last : start;
+    final trip = widget.trip;
+    final start = trip.points.isNotEmpty ? trip.points.first.point : null;
+    final end = trip.points.isNotEmpty ? trip.points.last.point : start;
+    final latLngs = trip.points.map((p) => p.point).toList();
 
     return Card(
       child: Padding(
@@ -83,10 +92,20 @@ class _TripCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Trip'),
-            if (trip.points.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Trip'),
+                TextButton.icon(
+                  onPressed: () => setState(() => _refreshNonce++),
+                  icon: const Icon(Icons.my_location, size: 16),
+                  label: const Text('Recenter'),
+                ),
+              ],
+            ),
+            if (latLngs.isNotEmpty) ...[
               const SizedBox(height: 8),
-              TripMapPreview(points: trip.points),
+              TripMapPreview(points: latLngs, refreshNonce: _refreshNonce),
             ],
             if (start != null && end != null) ...[
               const SizedBox(height: 8),
@@ -99,7 +118,7 @@ class _TripCard extends StatelessWidget {
             ],
             const SizedBox(height: 4),
             Text(_timeRange(trip.startedAt, trip.endedAt)),
-            Text('Duration: ${_fmtDuration(trip.duration)}'),
+            Text('Duration: ${_fmtDuration(trip.duration ?? Duration.zero)}'),
             Text('Points: ${trip.points.length}'),
             if (trip.activityType != null)
               Text('Activity: ${trip.activityType}'),
@@ -110,20 +129,31 @@ class _TripCard extends StatelessWidget {
   }
 }
 
-String _timeRange(DateTime start, DateTime? end) {
-  final endTime = end ?? DateTime.now();
-  return '${_fmtDateTime(start)} - ${_fmtDateTime(endTime)}';
+String _timeRange(DateTime? start, DateTime? end) {
+  if (start == null) return 'Unknown time';
+  String endTimeString;
+  if (end == null) {
+    endTimeString = 'Unkown end time';
+  } else {
+    endTimeString = _fmtDateTime(end);
+  }
+  return '${_fmtDateTime(start)} - $endTimeString';
 }
 
 String _fmtTime(DateTime dt) {
-  return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  final local = dt.toLocal();
+  final hour12 = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final ampm = local.hour >= 12 ? 'PM' : 'AM';
+  return '${hour12.toString().padLeft(2, '0')}:$minute $ampm';
 }
 
 String _fmtDateTime(DateTime dt) {
-  final y = dt.year.toString().padLeft(4, '0');
-  final m = dt.month.toString().padLeft(2, '0');
-  final d = dt.day.toString().padLeft(2, '0');
-  return '$y-$m-$d ${_fmtTime(dt)}';
+  final local = dt.toLocal();
+  final y = local.year.toString().padLeft(4, '0');
+  final m = local.month.toString().padLeft(2, '0');
+  final d = local.day.toString().padLeft(2, '0');
+  return '$y-$m-$d ${_fmtTime(local)}';
 }
 
 String _fmtDuration(Duration d) {

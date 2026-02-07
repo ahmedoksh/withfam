@@ -27,14 +27,19 @@ class VisitMapPreview extends StatelessWidget {
 }
 
 class TripMapPreview extends StatelessWidget {
-  const TripMapPreview({super.key, required this.points});
+  const TripMapPreview({
+    super.key,
+    required this.points,
+    this.refreshNonce = 0,
+  });
 
   final List<LatLng> points;
+  final int refreshNonce;
 
   @override
   Widget build(BuildContext context) {
     if (_supportsAppleMap && points.isNotEmpty) {
-      return _AppleTripMap(points: points);
+      return _AppleTripMap(points: points, refreshNonce: refreshNonce);
     }
 
     return _TripPainterView(points: points);
@@ -79,9 +84,10 @@ class _AppleVisitMap extends StatelessWidget {
 }
 
 class _AppleTripMap extends StatelessWidget {
-  const _AppleTripMap({required this.points});
+  const _AppleTripMap({required this.points, required this.refreshNonce});
 
   final List<LatLng> points;
+  final int refreshNonce;
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +113,7 @@ class _AppleTripMap extends StatelessWidget {
               children: [
                 AppleMap(
                   key: ValueKey(
-                    'trip-${points.length}-${points.first.latitude}-${points.first.longitude}',
+                    'trip-$refreshNonce-${points.length}-${points.first.latitude}-${points.first.longitude}',
                   ),
                   initialCameraPosition: CameraPosition(
                     target: center,
