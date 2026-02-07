@@ -1,0 +1,45 @@
+PODS:
+  - apple_maps_flutter (0.0.1):
+    - Flutter
+  - CocoaLumberjack (3.8.5):
+    - CocoaLumberjack/Core (= 3.8.5)
+  - CocoaLumberjack/Core (3.8.5)
+  - Flutter (1.0.0)
+  - flutter_background_geolocation (5.0.4):
+    - CocoaLumberjack (~> 3.8.5)
+    - Flutter
+    - TSLocationManager (~> 4.0.10)
+  - TSBackgroundFetch (4.0.6)
+  - TSLocationManager (4.0.12):
+    - TSBackgroundFetch (~> 4.0.6)
+
+DEPENDENCIES:
+  - apple_maps_flutter (from `.symlinks/plugins/apple_maps_flutter/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_background_geolocation (from `.symlinks/plugins/flutter_background_geolocation/ios`)
+
+SPEC REPOS:
+  trunk:
+    - CocoaLumberjack
+    - TSBackgroundFetch
+    - TSLocationManager
+
+EXTERNAL SOURCES:
+  apple_maps_flutter:
+    :path: ".symlinks/plugins/apple_maps_flutter/ios"
+  Flutter:
+    :path: Flutter
+  flutter_background_geolocation:
+    :path: ".symlinks/plugins/flutter_background_geolocation/ios"
+
+SPEC CHECKSUMS:
+  apple_maps_flutter: 2237d66a8e242082a2d88134af372f7b3375d7a6
+  CocoaLumberjack: 6a459bc897d6d80bd1b8c78482ec7ad05dffc3f0
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_background_geolocation: af1e42fdf9c6b238f988ed6ecedb455a4f02f767
+  TSBackgroundFetch: 0afbeaae4e1132866e1d4b6e55265af26b5958ae
+  TSLocationManager: a5d0a9b4049471db59a667f2c855ba9ad45066e4
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.16.2
