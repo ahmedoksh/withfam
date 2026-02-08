@@ -5,6 +5,7 @@ import 'package:flutter_background_geolocation/flutter_background_geolocation.da
     as bg;
 
 import '../services/tracking_store.dart';
+import '../services/log_service.dart';
 import 'package:apple_maps_flutter/apple_maps_flutter.dart';
 
 /// Simple service to initialize background geolocation and expose state.
@@ -56,6 +57,15 @@ class LocationService {
         'OnLocation at $at, isMoving: ${location.isMoving}, activity: ${_fmtActivity(location.activity)}',
       );
 
+      LogService.instance.log(
+        'onLocation',
+        activity: location.activity?.type,
+        isMoving: location.isMoving,
+        at: at,
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      );
+
       _updateBattery(location);
       _pushToStore(location);
       if (!_locationStream.isClosed) {
@@ -67,6 +77,15 @@ class LocationService {
       final at = _parseTimestamp(location.timestamp);
       debugPrint(
         'OnMotionChange at $at, isMoving: ${location.isMoving}, activity: ${_fmtActivity(location.activity)}',
+      );
+
+      LogService.instance.log(
+        'onMotionChange',
+        activity: location.activity?.type,
+        isMoving: location.isMoving,
+        at: at,
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
       );
 
       _updateBattery(location);
@@ -148,18 +167,19 @@ class LocationService {
   DateTime _parseTimestamp(dynamic ts) {
     if (ts is num) {
       final millis = ts < 1000000000000 ? (ts * 1000).toInt() : ts.toInt();
-      return DateTime.fromMillisecondsSinceEpoch(millis);
+      // Timestamps from the plugin are UTC epoch; keep as UTC.
+      return DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
     }
     if (ts is String) {
       final parsed = DateTime.tryParse(ts);
-      if (parsed != null) return parsed;
+      if (parsed != null) return parsed.toUtc();
       final num? n = num.tryParse(ts);
       if (n != null) {
         final millis = n < 1000000000000 ? (n * 1000).toInt() : n.toInt();
-        return DateTime.fromMillisecondsSinceEpoch(millis);
+        return DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
       }
     }
-    return DateTime.now();
+    return DateTime.now().toUtc();
   }
 
   Future<void> dispose() async {
@@ -188,6 +208,14 @@ class LocationService {
       _lastIsMoving = loc.isMoving;
       isMoving.value = loc.isMoving;
       _updateBattery(loc);
+      LogService.instance.log(
+        'fetchInitialLocation',
+        activity: loc.activity?.type,
+        isMoving: loc.isMoving,
+        at: at,
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
+      );
       _pushToStore(loc, atOverride: at);
     } catch (e) {
       debugPrint('Initial location fetch failed: $e');

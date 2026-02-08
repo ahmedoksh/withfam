@@ -79,6 +79,11 @@ class _LogTile extends StatelessWidget {
                 _ChipText(_fmtTime(entry.timestamp), cs.secondary),
               ],
             ),
+            const SizedBox(height: 6),
+            Text(
+              entry.message.isNotEmpty ? entry.message : 'No message',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             if (entry.lat != null && entry.lng != null)
               Text(
@@ -111,10 +116,10 @@ class _LogTile extends StatelessWidget {
 
   String _fmtTime(DateTime dt) {
     final local = dt.toLocal();
-    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final second = dt.second.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final second = local.second.toString().padLeft(2, '0');
+    final ampm = local.hour >= 12 ? 'PM' : 'AM';
     return '${local.month}/${local.day} ${hour.toString().padLeft(2, '0')}:$minute:$second $ampm';
   }
 }

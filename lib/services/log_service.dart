@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 class LogEntry {
   const LogEntry({
+    required this.message,
     required this.timestamp,
     this.activity,
     this.isMoving,
@@ -13,6 +14,7 @@ class LogEntry {
     this.lng,
   });
 
+  final String message;
   final DateTime timestamp;
   final String? activity;
   final bool? isMoving;
@@ -21,6 +23,7 @@ class LogEntry {
   final double? lng;
 
   Map<String, dynamic> toMap() => {
+    'message': message,
     'timestamp': timestamp.millisecondsSinceEpoch,
     'activity': activity,
     'isMoving': isMoving,
@@ -30,6 +33,7 @@ class LogEntry {
   };
 
   factory LogEntry.fromMap(Map map) => LogEntry(
+    message: (map['message'] as String?) ?? '',
     timestamp: DateTime.fromMillisecondsSinceEpoch(
       (map['timestamp'] as num?)?.toInt() ??
           DateTime.now().millisecondsSinceEpoch,
@@ -72,6 +76,7 @@ class LogService {
     double? lng,
   }) {
     final entry = LogEntry(
+      message: message,
       timestamp: at ?? DateTime.now(),
       activity: activity,
       isMoving: isMoving,
