@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:apple_maps_flutter/apple_maps_flutter.dart';
 
 class Visit {
-  Visit({required this.place, required this.arrivedAt, this.departedAt});
+  Visit({required this.place, required this.arrivedAt, DateTime? departedAt})
+    : departedAt = departedAt ?? arrivedAt;
 
   final LatLng place;
   final DateTime arrivedAt;
@@ -9,6 +12,15 @@ class Visit {
 
   Duration get duration =>
       (departedAt ?? DateTime.now()).difference(arrivedAt).abs();
+
+  DateTime get recentTime => departedAt ?? arrivedAt;
+
+  void updateMostRecentTime(DateTime at) {
+    if (at.isAfter(arrivedAt) &&
+        (departedAt == null || at.isAfter(departedAt!))) {
+      departedAt = at;
+    }
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -97,6 +109,15 @@ class TripSegment {
     return end.difference(start).abs();
   }
 
+  double get distanceMeters {
+    if (points.length < 2) return 0;
+    var total = 0.0;
+    for (var i = 1; i < points.length; i++) {
+      total += fastDistanceMeters(points[i - 1].point, points[i].point);
+    }
+    return total;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'points': points.map((p) => p.toMap()).toList(),
@@ -137,3 +158,14 @@ DateTime _ts(dynamic value) {
   }
   return DateTime.now();
 }
+
+double fastDistanceMeters(LatLng a, LatLng b) {
+  const earthRadius = 6371000.0; // meters
+  final x =
+      _degToRad(b.longitude - a.longitude) *
+      math.cos(_degToRad((a.latitude + b.latitude) / 2));
+  final y = _degToRad(b.latitude - a.latitude);
+  return earthRadius * math.sqrt(x * x + y * y);
+}
+
+double _degToRad(double deg) => deg * (math.pi / 180.0);

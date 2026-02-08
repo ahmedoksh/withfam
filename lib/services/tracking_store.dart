@@ -134,7 +134,7 @@ class TrackingStore {
   }
 
   void _appendToVisit(LatLng point, DateTime at) {
-    if (_activeVisit == null) {
+    void startVisit() {
       LogService.instance.log(
         "Starting new visit ${visits.value.length} at $at with point $point",
         isMoving: false,
@@ -146,10 +146,21 @@ class TrackingStore {
       visits.value = [...visits.value, _activeVisit!];
       unawaited(_persistVisits());
     }
+
+    if (_activeVisit == null) {
+      startVisit();
+    } else if (fastDistanceMeters(_activeVisit!.place, point) > 15) {
+      // End the existing visit and start a new one.
+      _closeVisit(at);
+      startVisit();
+    } else {
+      _activeVisit!.updateMostRecentTime(at);
+      unawaited(_persistVisits());
+    }
   }
 
   void _closeVisit(DateTime at) {
-    if (_activeVisit != null && _activeVisit!.departedAt == null) {
+    if (_activeVisit != null) {
       LogService.instance.log(
         "Closing visit ${visits.value.length} at $at",
         isMoving: true,
@@ -157,7 +168,7 @@ class TrackingStore {
         lat: _activeVisit!.place.latitude,
         lng: _activeVisit!.place.longitude,
       );
-      _activeVisit!.departedAt = at;
+      _activeVisit!.updateMostRecentTime(at);
       visits.value = [...visits.value];
       unawaited(_persistVisits());
       _activeVisit = null;
